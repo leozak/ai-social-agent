@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LuSend } from "react-icons/lu";
+import { LuArrowDown, LuArrowUpDown, LuSend } from "react-icons/lu";
 import { TiAttachment } from "react-icons/ti";
 
 import { useAgentStream } from "../../hooks/useAgentStream";
 
 const ChatStream = () => {
-  const [chatInput, setChatInput] = useState("");
+  const [chatInput, setChatInput] = useState<string>("");
+  const [showScrollButton, setShowScrollButton] = useState<boolean>(false);
 
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const containerChatRef = useRef<HTMLDivElement>(null);
   const containerBottomRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScroll = useRef<boolean>(true);
 
   const { stream, messages, isLoading } = useAgentStream();
 
@@ -41,14 +43,29 @@ const ChatStream = () => {
     }
   };
 
-  const isAtBottom = useCallback(() => {
+  const handleScrollToBottom = () => {
     const e = containerChatRef.current;
-    if (!e) return true;
-    return e.scrollHeight - e.scrollTop - e.clientHeight < 100;
+    if (!e) return;
+    e.scrollTo({
+      top: e.scrollHeight,
+      behavior: "smooth",
+    });
+  };
+
+  const handleScroll = useCallback(() => {
+    const e = containerChatRef.current;
+    if (!e) return;
+    const isNearBottom = e.scrollHeight - e.scrollTop - e.clientHeight < 100;
+
+    shouldAutoScroll.current = isNearBottom;
+
+    setShowScrollButton(!isNearBottom);
   }, []);
 
   useEffect(() => {
-    if (isAtBottom()) {
+    if (!shouldAutoScroll.current) return;
+
+    requestAnimationFrame(() => {
       const e = containerChatRef.current;
       if (e) {
         e.scrollTo({
@@ -56,15 +73,16 @@ const ChatStream = () => {
           behavior: "smooth",
         });
       }
-    }
-  }, [messages, isAtBottom]);
+    });
+  }, [messages, isLoading]);
 
   return (
     <div className="flex w-full h-full justify-center">
-      <div className="relative w-full md:w-200 h-full">
+      <div className="relative flex flex-col w-full md:w-200 h-full">
         <div
           ref={containerChatRef}
-          className="flex flex-col h-full overflow-y-auto p-4 space-y-3 scroll-smooth mb-80
+          onScroll={handleScroll}
+          className="relative flex flex-col flex-1 min-h-0 overflow-y-auto p-4 space-y-3 scroll-smooth
                     [&::-webkit-scrollbar]:w-2
                   [&::-webkit-scrollbar-track]:bg-neutral-700
                   [&::-webkit-scrollbar-thumb]:bg-neutral-500
@@ -72,7 +90,7 @@ const ChatStream = () => {
                   hover:[&::-webkit-scrollbar-thumb]:bg-slate-400
                     hover:[&::-webkit-scrollbar-thumb]:cursor-pointer"
         >
-          <div className="">Olá, como posso ajudar?</div>
+          <div>Olá, como posso ajudar?</div>
 
           {messages.map((message, index) => (
             <div key={index}>
@@ -95,7 +113,20 @@ const ChatStream = () => {
           <div ref={containerBottomRef} className="hidden"></div>
         </div>
 
-        <div className="absolute flex flex-row justify-center w-full bottom-0">
+        {showScrollButton && (
+          <div
+            onClick={handleScrollToBottom}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2
+                       bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500
+                       text-white rounded-full p-2 shadow-lg
+                       transition-all duration-200 cursor-pointer"
+            aria-label="Ir para o final do chat"
+          >
+            <LuArrowDown size={20} />
+          </div>
+        )}
+
+        <div className="shrink-0 flex flex-row justify-center w-full p-2">
           <div className="flex flex-col w-full px-4 py-2 bg-neutral-800 rounded-2xl shadow-md">
             <div className="h-fit">
               <textarea
