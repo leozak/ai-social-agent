@@ -8,6 +8,23 @@ interface Message {
 
 const url = "http://localhost:8000/chat/stream_event";
 
+// Retrieve or create a persistent user identifier
+function getUserId(): string {
+  let id = localStorage.getItem("userId");
+  if (!id) {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      // @ts-ignore - crypto.randomUUID may not be typed in older TS versions
+      id = crypto.randomUUID();
+      console.log("Generated UUID:", id);
+    } else {
+      // Fallback: generate a pseudo‑random ID
+      id = Date.now().toString() + Math.random().toString(36).substring(2);
+    }
+    localStorage.setItem("userId", id);
+  }
+  return id;
+}
+
 export function useAgentStream() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [completion, setCompletion] = useState<string>("");
@@ -28,7 +45,7 @@ export function useAgentStream() {
         const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userMessage }),
+          body: JSON.stringify({ message: userMessage, user_id: getUserId() }),
         });
 
         if (!response.ok) throw new Error(`Erro na requisição (${response.status}): ${response}`);

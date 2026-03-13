@@ -5,12 +5,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from typing import Dict, List
 from langchain.agents import create_agent
 from langchain.tools import tool
 # from langchain_openrouter import ChatOpenRouter
 # from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_groq import ChatGroq
-from langchain.messages import SystemMessage, HumanMessage
+from langchain.messages import SystemMessage, HumanMessage, AIMessage    
 
 load_dotenv()
 
@@ -20,6 +21,23 @@ LLM_URL = os.getenv("LLM_URL")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 
 app = FastAPI(title="API ai-social-agent", version="0.1.0")
+
+# In-memory storage for conversation threads, mapping user_id to a list of message dicts
+conversation_threads: Dict[str, List[Dict[str, str]]] = {}
+
+def build_message_objects(thread: List[Dict[str, str]]):
+    """Convert stored thread dicts to LangChain message objects.
+    Supports user (HumanMessage) and assistant (AIMessage) roles.
+    """
+    msgs = []
+    for m in thread:
+        role = m.get("role")
+        content = m.get("content", "")
+        if role == "user":
+            msgs.append(HumanMessage(content=content))
+        elif role == "assistant":
+            msgs.append(AIMessage(content=content))
+    return msgs
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,12 +71,12 @@ model = ChatGroq(
 #     output_version="v1",
 # )
 
-# system_message = SystemMessage(content=[{"type": "text", "text": f"Voce é um assistente útil"}])
+system_message = SystemMessage(content="Voce é um assistente útil para criar posts autênticos para redes sociais.")
 
 agent = create_agent(
     model=model,
     tools=[get_weather],
-    system_prompt=SystemMessage(content="Você é um assistente útil"),
+    system_prompt=system_message,
 )
 
 @app.get("/")
@@ -71,9 +89,10 @@ async def root():
         "message": "API ai-social-agent online"
     }
 
+
 class ChatRequest(BaseModel):
     message: str
-
+    user_id: str
 
 
 @app.post("/chat")
@@ -81,36 +100,35 @@ async def chat(data: ChatRequest):
     """
     Chat endpoint
     """
-    # message = HumanMessage(content_blocks=[{"type": "text", "text": data.message}])
-    # messages = [system_message, message]
-    # response = agent.invoke(messages)
-
-    response = agent.invoke(
-        {"messages": [{"role": "user", "content": data.message}]}
-    )
-
-    print(response)
-
-    print(data)
+    # Retrieve or create conversation thread for this user
+    thread = conversation_threads.setdefault(data.user_id, [])
+    # Append the new user message to the thread
+    thread.append({"role": "user", "content": data.message})
+    # Invoke the agent with the full conversation history
+    response = agent.invoke({"messages": thread})
+    # Append the assistant's response to the thread for future context
+    thread.append({"role": "assistant", "content": response})
+    
     return {
         "status": "ok",
         "message": response
     }
 
 
-
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
     """
-    Stream chat endpoint
+    Stream chat endpoint with context support
     """
-    messages = {"messages":
-        [            
-            HumanMessage(content=request.message),
-        ]
-    }
+    # Retrieve or create conversation thread for this user
+    thread = conversation_threads.setdefault(request.user_id, [])
+    # Append the new user message to the thread
+    thread.append({"role": "user", "content": request.message})
+    # Build message objects (HumanMessage / AIMessage) from the thread
+    messages = {"messages": build_message_objects(thread)}
 
     async def generator():
+        full_response = ""
         async for chunk in agent.astream(messages):
             if "model" not in chunk:
                 continue
@@ -131,11 +149,14 @@ async def chat_stream(request: ChatRequest):
                 continue
 
             if text:
+                full_response += text
                 data = json.dumps({"chunk": text})
                 print(data)
                 yield f"data: {data}\n\n"
-        
-        # Sinaliza o fim da stream
+        # Append assistant response to thread for future context
+        if full_response:
+            thread.append({"role": "assistant", "content": full_response})
+        # Signal end of stream
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -151,15 +172,17 @@ async def chat_stream(request: ChatRequest):
 @app.post("/chat/stream_event")
 async def chat_stream_event(request: ChatRequest):
     """
-    Stream chat endpoint
+    Stream chat endpoint with context support
     """
-    messages = {"messages":
-        [            
-            HumanMessage(content=request.message),
-        ]
-    }
+    # Retrieve or create conversation thread for this user
+    thread = conversation_threads.setdefault(request.user_id, [])
+    # Append the new user message to the thread
+    thread.append({"role": "user", "content": request.message})
+    # Build message objects (HumanMessage / AIMessage) from the thread
+    messages = {"messages": build_message_objects(thread)}
 
     async def generator():
+        full_response = ""
         async for event in agent.astream_events(messages, output_version="v2"):
             if event["event"] != "on_chat_model_stream":
                 continue
@@ -178,11 +201,14 @@ async def chat_stream_event(request: ChatRequest):
                 continue
 
             if text:
+                full_response += text
                 data = json.dumps({"chunk": text})
                 print(data)
                 yield f"data: {data}\n\n"
-        
-        # Sinaliza o fim da stream
+        # Append assistant response to thread for future context
+        if full_response:
+            thread.append({"role": "assistant", "content": full_response})
+        # Signal end of stream
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
