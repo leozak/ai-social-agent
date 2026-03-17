@@ -1,10 +1,35 @@
-import ChatStream from "./components/ChatStream/ChatStream";
+import { useState, useRef, useEffect } from "react";
+import { NoiseBackground } from "./components/noise/NoiseBackground";
+
+import ChatInput from "./components/chatInput/ChatInput";
+import ChatMessages from "./components/chatMessages/ChatMessages";
 
 function App() {
+  const inputRef = useRef<HTMLDivElement>(null);
+  const [inputHeight, setInputHeight] = useState<number>(128);
+
+  useEffect(() => {
+    if (!inputRef.current) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setInputHeight(entry.contentRect.height + 32);
+    });
+
+    observer.observe(inputRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="flex w-screen h-screen bg-linear-to-br from-neutral-800 to-neutral-600 p-6 text-stone-300 selection:bg-slate-700">
-      <ChatStream />
-    </div>
+    <NoiseBackground>
+      <div className="relative min-h-screen justify-items-center overflow-x-hidden p-6 text-stone-300 selection:bg-slate-700">
+        <div className="overflow-y-hidden md:w-180">
+          <ChatMessages inputHeight={inputHeight} />
+        </div>
+        <div ref={inputRef} className="fixed flex flex-row bottom-0">
+          <ChatInput />
+        </div>
+      </div>
+    </NoiseBackground>
   );
 }
 

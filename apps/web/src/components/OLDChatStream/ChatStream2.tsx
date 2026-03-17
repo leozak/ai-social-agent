@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LuArrowDown, LuArrowUpDown, LuSend } from "react-icons/lu";
+import { LuArrowDown, LuSend } from "react-icons/lu";
 import { TiAttachment } from "react-icons/ti";
 
 import { useAgentStream } from "../../hooks/useAgentStream";
@@ -7,10 +7,11 @@ import { useAgentStream } from "../../hooks/useAgentStream";
 const ChatStream = () => {
   const [chatInput, setChatInput] = useState<string>("");
   const [showScrollButton, setShowScrollButton] = useState<boolean>(false);
+  const [inputAreaHeight, setInputAreaHeight] = useState<number>(0);
 
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
   const containerChatRef = useRef<HTMLDivElement>(null);
-  const containerBottomRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef<boolean>(true);
 
   const { stream, messages, isLoading } = useAgentStream();
@@ -25,7 +26,6 @@ const ChatStream = () => {
     const newHeight = Math.min(elementChatInput.scrollHeight, maxHeight);
 
     elementChatInput.style.height = `${newHeight}px`;
-
     elementChatInput.style.overflowY =
       elementChatInput.scrollHeight > maxHeight ? "auto" : "hidden";
 
@@ -56,11 +56,21 @@ const ChatStream = () => {
     const e = containerChatRef.current;
     if (!e) return;
     const isNearBottom = e.scrollHeight - e.scrollTop - e.clientHeight < 100;
-
     shouldAutoScroll.current = isNearBottom;
-
     setShowScrollButton(!isNearBottom);
   }, []);
+
+  useEffect(() => {
+    const e = inputContainerRef.current;
+    if (!e) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setInputAreaHeight(entry.borderBoxSize[0].blockSize);
+      }
+    });
+    observer.observe(e);
+    return () => observer.disconnect();
+  });
 
   useEffect(() => {
     if (!shouldAutoScroll.current) return;
@@ -102,22 +112,21 @@ const ChatStream = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-start">
-                  <div className="max-w-2/3">{message.content}</div>
+                  <div className="max-w-3/4">{message.content}</div>
                 </div>
               )}
             </div>
           ))}
 
           {isLoading && <div>O Agente está pensando...</div>}
-
-          <div ref={containerBottomRef} className="hidden"></div>
         </div>
 
         {showScrollButton && (
           <div
             onClick={handleScrollToBottom}
+            style={{ bottom: `${inputAreaHeight + 16}px` }}
             className="absolute bottom-4 left-1/2 -translate-x-1/2
-                       bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500
+                       bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600
                        text-white rounded-full p-2 shadow-lg
                        transition-all duration-200 cursor-pointer"
             aria-label="Ir para o final do chat"
@@ -126,7 +135,10 @@ const ChatStream = () => {
           </div>
         )}
 
-        <div className="shrink-0 flex flex-row justify-center w-full p-2">
+        <div
+          ref={inputContainerRef}
+          className="shrink-0 flex flex-row justify-center w-full p-2"
+        >
           <div className="flex flex-col w-full px-4 py-2 bg-neutral-800 rounded-2xl shadow-md">
             <div className="h-fit">
               <textarea

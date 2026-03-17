@@ -9,7 +9,7 @@ from typing import Dict, List
 from langchain.agents import create_agent
 from langchain.tools import tool
 # from langchain_openrouter import ChatOpenRouter
-# from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_groq import ChatGroq
 from langchain.messages import SystemMessage, HumanMessage, AIMessage    
 
@@ -52,19 +52,19 @@ def get_weather(city: str) -> str:
     """Obtenha o clima de uma cidade específica."""
     return f"É sempre ensolarado em {city}!"
 
-model = ChatGroq(
-    model=LLM_MODEL,
-    api_key=LLM_API_KEY,
-    temperature=1,
-    output_version="v1",
-)
-# model = ChatNVIDIA(
+# model = ChatGroq(
 #     model=LLM_MODEL,
 #     api_key=LLM_API_KEY,
 #     temperature=1,
-#     top_p=0.9,
 #     output_version="v1",
 # )
+model = ChatNVIDIA(
+    model=LLM_MODEL,
+    api_key=LLM_API_KEY,
+    temperature=1,
+    top_p=0.9,
+    output_version="v1",
+)
 # model = ChatOpenRouter(
 #     model=LLM_MODEL,
 #     api_key=OPENROUTER_API_KEY,
