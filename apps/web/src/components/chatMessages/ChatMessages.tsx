@@ -6,6 +6,8 @@ import rehypeRaw from "rehype-raw";
 import { useAgentStore } from "../../store/agent";
 import { LuArrowDown } from "react-icons/lu";
 
+import LoadingDots from "../loadingDots/LoadingDots";
+
 const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
   const { messages, isLoading } = useAgentStore();
 
@@ -42,7 +44,6 @@ const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
 
   return (
     <div style={{ paddingBottom: inputHeight - 22 }}>
-      <div>Olá, como posso ajudar?</div>
       {messages.map((message, index) => (
         <div key={index} className="markdown-body">
           {message.role === "user" ? (
@@ -71,7 +72,7 @@ const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
         </div>
       ))}
 
-      {isLoading && <div>O Agente está pensando...</div>}
+      {isLoading && <LoadingDots />}
 
       <div ref={bottomRef}></div>
 

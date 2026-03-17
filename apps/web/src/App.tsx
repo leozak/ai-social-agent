@@ -23,6 +23,13 @@ function App() {
     <NoiseBackground>
       <div className="relative min-h-screen justify-items-center overflow-x-hidden p-6 text-stone-300 selection:bg-slate-700">
         <div className="overflow-y-hidden md:w-180">
+          <div className="mb-4">
+            <h1 className="font-bold text-2xl text-center mt-6">Postlab</h1>
+            <p className="font-semibold text-center mt-2">
+              Transformando ideias em conteúdo.
+            </p>
+            <p className="text-center mt-4">Envie um documento ou uma URL.</p>
+          </div>
           <ChatMessages inputHeight={inputHeight} />
         </div>
         <div ref={inputRef} className="fixed flex flex-row bottom-4">
