@@ -1,4 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 import { useAgentStore } from "../../store/agent";
 import { LuArrowDown } from "react-icons/lu";
@@ -41,16 +44,28 @@ const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
     <div style={{ paddingBottom: inputHeight - 22 }}>
       <div>Olá, como posso ajudar?</div>
       {messages.map((message, index) => (
-        <div key={index}>
+        <div key={index} className="markdown-body">
           {message.role === "user" ? (
             <div className="flex items-center justify-end mt-12 mb-6">
               <div className="max-w-2/3 px-6 py-2 bg-neutral-800 rounded-2xl">
-                {message.content}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                >
+                  {message.content}
+                </ReactMarkdown>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-start">
-              <div className="max-w-3/4">{message.content}</div>
+              <div className="max-w-3/4">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </div>
@@ -65,7 +80,7 @@ const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
           onClick={scrollToBottom}
           style={{ bottom: inputHeight }}
           className="fixed left-1/2 -translate-x-1/2
-                    bg-neutral-700 hover:bg-neutral-600 
+                    bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 
                     text-white p-2 rounded-full shadow-lg 
                     transition-all duration-300 ease-in-out
                     cursor-pointer z-50"

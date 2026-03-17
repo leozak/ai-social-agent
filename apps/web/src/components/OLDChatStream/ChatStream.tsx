@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LuArrowDown, LuSend } from "react-icons/lu";
 import { TiAttachment } from "react-icons/ti";
 
-import { useAgentStream } from "../../hooks/useAgentStream";
+import { useAgentStream } from "../../hooks/OLDuseAgentStream";
 
 const ChatStream = () => {
   const [chatInput, setChatInput] = useState<string>("");

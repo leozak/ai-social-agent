@@ -25,7 +25,7 @@ function App() {
         <div className="overflow-y-hidden md:w-180">
           <ChatMessages inputHeight={inputHeight} />
         </div>
-        <div ref={inputRef} className="fixed flex flex-row bottom-0">
+        <div ref={inputRef} className="fixed flex flex-row bottom-4">
           <ChatInput />
         </div>
       </div>
