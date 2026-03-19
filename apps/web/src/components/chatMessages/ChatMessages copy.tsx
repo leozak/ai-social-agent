@@ -7,7 +7,6 @@ import { useAgentStore } from "../../store/agent";
 import { LuArrowDown } from "react-icons/lu";
 
 import LoadingDots from "../loadingDots/LoadingDots";
-import AgentMessage from "./AgentMessage";
 
 const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
   const { messages, isLoading } = useAgentStore();
@@ -59,7 +58,16 @@ const ChatMessages = ({ inputHeight }: { inputHeight: number }) => {
               </div>
             </div>
           ) : (
-            <AgentMessage content={message.content} />
+            <div className="flex flex-col items-center justify-start">
+              <div className="max-w-3/4">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            </div>
           )}
         </div>
       ))}

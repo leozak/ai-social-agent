@@ -1,0 +1,9 @@
+beautifulsoup4
+fastapi
+langchain
+langchain-groq
+langchain-openai
+langchain-openrouter
+langchain-nvidia-ai-endpoints
+pydantic
+uvicorn

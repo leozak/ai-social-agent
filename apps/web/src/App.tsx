@@ -28,7 +28,9 @@ function App() {
             <p className="font-semibold text-center mt-2">
               Transformando ideias em conteúdo.
             </p>
-            <p className="text-center mt-4">Envie um documento ou uma URL.</p>
+            <p className="text-center mt-4">
+              Envie um documento ou informe uma URL.
+            </p>
           </div>
           <ChatMessages inputHeight={inputHeight} />
         </div>
